@@ -1,0 +1,6 @@
+---
+- name: Configure Etcd 
+  hosts: de01-infra-etcd-cluster
+  become: yes
+  roles:
+    - etcd

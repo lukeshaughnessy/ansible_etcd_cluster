@@ -1,0 +1,39 @@
+[Unit]
+Description=etcd
+After=network.target
+
+[Install]
+WantedBy=multi-user.target
+
+[Service]
+#basic config
+Environment=ETCD_DATA_DIR=/var/lib/etcd
+Environment=ETCD_NAME={{ etcd_host }}
+Environment=ETCD_LISTEN_PEER_URLS=https://{{ inventory_hostname }}:2380
+Environment=ETCD_LISTEN_CLIENT_URLS=https://{{ inventory_hostname }}:2379
+Environment=ETCD_ADVERTISE_CLIENT_URLS=https://{{ inventory_hostname }}:2379
+
+#initial cluster configuration
+#IMPORTANT- the etcd*_ip variables must be set in the Inventory file
+Environment=ETCD_INITIAL_CLUSTER=host1=https://{{ etcd1_ip }}:2380,host2=https://{{ etcd2_ip }}:2380,host3=https://{{ etcd3_ip }}:2380
+Environment=ETCD_INITIAL_CLUSTER_TOKEN=NmY3MzE3MWYzYzYzYTBmNjE5MjNiOGIy
+Environment=ETCD_INITIAL_CLUSTER_STATE=new
+Environment=ETCD_INITIAL_ADVERTISE_PEER_URLS=https://{{ inventory_hostname }}:2380
+
+#security
+Environment=ETCD_TRUSTED_CA_FILE=/var/etcd_certs/{{ ansible_hostname }}.ca.crt
+Environment=ETCD_CERT_FILE=/var/etcd_certs/{{ ansible_hostname }}.crt
+Environment=ETCD_KEY_FILE=/var/etcd_certs/{{ ansible_hostname }}.key.insecure
+Environment=ETCD_CLIENT_CERT_AUTH=1
+
+Environment=ETCD_PEER_TRUSTED_CA_FILE=/var/etcd_certs/{{ ansible_hostname }}.ca.crt
+Environment=ETCD_PEER_CERT_FILE=/var/etcd_certs/{{ ansible_hostname }}.crt
+Environment=ETCD_PEER_KEY_FILE=/var/etcd_certs/{{ ansible_hostname }}.key.insecure
+Environment=ETCD_PEER_CLIENT_CERT_AUTH=1
+
+#tuning see https://github.com/coreos/etcd/blob/master/Documentation/tuning.md
+Environment=ETCD_HEARTBEAT_INTERVAL=100
+Environment=ETCD_ELECTION_TIMEOUT=2500
+
+ExecStart=/usr/local/bin/etcd
+Restart=always

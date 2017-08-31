@@ -1,0 +1,57 @@
+---
+- name: ensure etcd directories exist
+  file:
+    dest: "{{ item }}"
+    state: directory
+  with_items:
+    - /var/log/etcd
+    - /tmp/etcdfiles
+    - /var/etcd_certs
+    - /tmp/.etcd-ca
+
+- name: Get and unpack etcd
+  unarchive:
+    src: "https://github.com/coreos/etcd/releases/download/v3.1.8/etcd-v3.1.8-linux-amd64.tar.gz"
+    dest: /tmp/etcdfiles
+    remote_src: True
+    mode: 0755
+    validate_certs: no
+    owner: root
+    group: root
+
+- name: Move etcd binary
+  command: cp /tmp/etcdfiles/etcd-v3.1.8-linux-amd64/etcd /usr/local/bin
+
+- name: Move etcdctl binary
+  command: cp /tmp/etcdfiles/etcd-v3.1.8-linux-amd64/etcdctl /usr/local/bin
+  
+- name: Add CA
+  copy:
+    src: files/ca.crt
+    dest: /tmp/.etcd-ca/ca.crt
+
+- name: Add CA key
+  copy:
+    src: files/ca.key
+    dest: /tmp/.etcd-ca/ca.key
+
+- name: Add CA info
+  copy:
+    src: files/ca.crt.info
+    dest: /tmp/.etcd-ca/ca.crt.info
+
+- name: Generate keys
+  script: scripts/etcdcerts.sh {{ ansible_hostname }} {{  inventory_hostname }}
+
+
+- name: Place systemd unit file
+  template:
+    src: templates/etcd.service.j2
+    dest: /etc/systemd/system/etcd.service
+  notify: restart etcd
+
+- systemd:
+    daemon_reload: yes
+    name: etcd
+    enabled: yes
+    state: started
